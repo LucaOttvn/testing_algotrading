@@ -16,6 +16,20 @@ export const color fibColor0786 = color.aqua
 
 export const color fibColor1000 = color.white
 
-export const color fibColor1272 = color.green
+export const color fibColor1272 = #2a642d
 
 export const color fibColor1618 = color.green
+
+
+// --- Fibonacci background colors ---
+export const color fibFill0To0500 = color.new(color.red, 0)
+
+export const color fibFill0500To0618 = color.new(color.orange, 0)
+
+export const color fibFill0618To0786 = color.new(color.aqua, 0)
+
+export const color fibFill0786To1000 = color.new(color.gray, 0)
+
+export const color fibFill1000To1272 = color.new(#2a642d, 0)
+
+export const color fibFill1272To1618 = color.new(color.green, 0)
