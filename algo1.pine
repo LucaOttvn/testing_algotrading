@@ -1,0 +1,370 @@
+//@version=6
+indicator(
+     "3-Candle Gap Zones + Bullish Gap Fibonacci",
+     overlay = true,
+     max_boxes_count = 500,
+     max_lines_count = 500
+)
+
+// --- Inputs ---
+
+lookbackBars = input.int(
+     1000,
+     "Lookback bars",
+     minval = 3
+)
+
+minGapPoints = input.float(
+     0.0,
+     "Minimum gap size (points)",
+     step = 0.01
+)
+
+// Gap colors
+bullColor = input.color(
+     color.new(color.green, 65),
+     "Bullish gap color"
+)
+
+bearColor = input.color(
+     color.new(color.red, 65),
+     "Bearish gap color"
+)
+
+// Fibonacci settings
+showBullFib = input.bool(
+     true,
+     "Show Fibonacci for bullish gaps"
+)
+
+fibLengthBars = input.int(
+     20,
+     "Fibonacci maximum length",
+     minval = 1,
+     maxval = 20
+)
+
+fibWidth = input.int(
+     2,
+     "Fibonacci line width",
+     minval = 1,
+     maxval = 4
+)
+
+fibLineStyleInput = input.string(
+     "Solid",
+     "Fibonacci line style",
+     options = ["Solid", "Dashed", "Dotted"]
+)
+
+fibTransparency = input.int(
+     75,
+     "Fibonacci background transparency",
+     minval = 0,
+     maxval = 95
+)
+
+// --- Fibonacci line colors ---
+
+fibColor0 = input.color(
+     color.white,
+     "0.000 line color"
+)
+
+fibColor0500 = input.color(
+     color.red,
+     "0.500 line color"
+)
+
+fibColor0618 = input.color(
+     color.orange,
+     "0.618 line color"
+)
+
+fibColor0786 = input.color(
+     color.aqua,
+     "0.786 line color"
+)
+
+fibColor1000 = input.color(
+     color.white,
+     "1.000 line color"
+)
+
+fibColor1272 = input.color(
+     color.green,
+     "1.272 line color"
+)
+
+fibColor1618 = input.color(
+     color.green,
+     "1.618 line color"
+)
+
+// --- Fibonacci background colors ---
+fibFill0To0500 = input.color(
+     color.red,
+     "0.000–0.500 background"
+)
+
+fibFill0500To0618 = input.color(
+     color.orange,
+     "0.500–0.618 background"
+)
+
+fibFill0618To0786 = input.color(
+     color.aqua,
+     "0.618–0.786 background"
+)
+
+fibFill0786To1000 = input.color(
+     color.gray,
+     "0.786–1.000 background"
+)
+
+fibFill1000To1272 = input.color(
+     color.rgb(25, 75, 55),
+     "1.000–1.272 background"
+)
+
+fibFill1272To1618 = input.color(
+     color.green,
+     "1.272–1.618 background"
+)
+
+// TradingView has object limits.
+// Each Fibonacci structure uses 7 lines and 6 background boxes.
+maxFibSets = input.int(
+     40,
+     "Maximum Fibonacci structures",
+     minval = 1,
+     maxval = 60
+)
+
+// --- Fibonacci line style ---
+
+fibLineStyle = switch fibLineStyleInput
+    "Dashed" => line.style_dashed
+    "Dotted" => line.style_dotted
+    => line.style_solid
+
+// --- Running daily high and low ---
+
+isNewDay = ta.change(time("D")) != 0
+
+var float dayLow = na
+var float dayHigh = na
+
+if barstate.isfirst or isNewDay
+    dayLow := low
+    dayHigh := high
+else
+    dayLow := math.min(dayLow, low)
+    dayHigh := math.max(dayHigh, high)
+
+// --- Lookback and candle availability ---
+
+enoughBars = bar_index >= 2
+
+inLookback = bar_index >= last_bar_index - lookbackBars + 1
+
+// Candle 1 and Candle 3
+// Candle 2 is intentionally ignored
+c1High = high[2]
+c1Low = low[2]
+
+c3Low = low
+c3High = high
+
+// Gap conditions
+bullishGapRaw = enoughBars and c3Low > c1High
+bearishGapRaw = enoughBars and c3High < c1Low
+
+// Gap sizes
+gapPtsBull = c3Low - c1High
+gapPtsBear = c1Low - c3High
+
+bullishGap =
+     inLookback and
+     bullishGapRaw and
+     gapPtsBull >= minGapPoints
+
+bearishGap =
+     inLookback and
+     bearishGapRaw and
+     gapPtsBear >= minGapPoints
+
+// Draw bullish gap zone
+if bullishGap
+    box.new(
+         left = bar_index - 2,
+         right = bar_index,
+         top = c3Low,
+         bottom = c1High,
+         bgcolor = bullColor,
+         border_color = na
+    )
+
+// Draw bearish gap zone
+if bearishGap
+    box.new(
+         left = bar_index - 2,
+         right = bar_index,
+         top = c1Low,
+         bottom = c3High,
+         bgcolor = bearColor,
+         border_color = na
+    )
+
+// Fibonacci object storage
+var array<line> fibLines = array.new_line()
+var array<box> fibBoxes = array.new_box()
+
+// Fibonacci levels
+var array<float> fibRatios = array.from(
+     0.000,
+     0.500,
+     0.618,
+     0.786,
+     1.000,
+     1.272,
+     1.618
+)
+
+// Corresponding line colors
+var array<color> fibLineColors = array.from(
+     fibColor0,
+     fibColor0500,
+     fibColor0618,
+     fibColor0786,
+     fibColor1000,
+     fibColor1272,
+     fibColor1618
+)
+
+// Draw Fibonacci for valid bullish gaps
+if showBullFib and bullishGap and not na(dayLow) and not na(dayHigh)
+
+    dailyRange = dayHigh - dayLow
+
+    if dailyRange > 0
+
+        linesPerSet = 7
+        boxesPerSet = 6
+
+        // Remove oldest Fibonacci lines.
+        while array.size(fibLines) >= maxFibSets * linesPerSet
+            oldestLine = array.shift(fibLines)
+            line.delete(oldestLine)
+
+        // Remove oldest Fibonacci background sections.
+        while array.size(fibBoxes) >= maxFibSets * boxesPerSet
+            oldestBox = array.shift(fibBoxes)
+            box.delete(oldestBox)
+
+        fibStartBar = bar_index
+        fibEndBar = bar_index + fibLengthBars
+
+        // Calculate Fibonacci prices.
+        level0 = dayLow
+        level0500 = dayLow + dailyRange * 0.500
+        level0618 = dayLow + dailyRange * 0.618
+        level0786 = dayLow + dailyRange * 0.786
+        level1000 = dayHigh
+        level1272 = dayLow + dailyRange * 1.272
+        level1618 = dayLow + dailyRange * 1.618
+
+        // --- Background sections
+        fill0To0500 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level0500,
+             bottom = level0,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill0To0500, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill0To0500)
+
+        fill0500To0618 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level0618,
+             bottom = level0500,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill0500To0618, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill0500To0618)
+
+        fill0618To0786 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level0786,
+             bottom = level0618,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill0618To0786, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill0618To0786)
+
+        fill0786To1000 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level1000,
+             bottom = level0786,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill0786To1000, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill0786To1000)
+
+        fill1000To1272 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level1272,
+             bottom = level1000,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill1000To1272, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill1000To1272)
+
+        fill1272To1618 = box.new(
+             left = fibStartBar,
+             right = fibEndBar,
+             top = level1618,
+             bottom = level1272,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(fibFill1272To1618, fibTransparency),
+             border_color = na
+        )
+
+        array.push(fibBoxes, fill1272To1618)
+
+        // --- Fibonacci horizontal lines
+
+        for i = 0 to array.size(fibRatios) - 1
+
+            ratio = array.get(fibRatios, i)
+            levelColor = array.get(fibLineColors, i)
+
+            levelPrice = dayLow + dailyRange * ratio
+
+            levelLine = line.new(
+                 x1 = fibStartBar,
+                 y1 = levelPrice,
+                 x2 = fibEndBar,
+                 y2 = levelPrice,
+                 xloc = xloc.bar_index,
+                 color = levelColor,
+                 width = fibWidth,
+                 style = fibLineStyle
+            )
+
+            array.push(fibLines, levelLine)
