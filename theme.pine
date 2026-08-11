@@ -1,0 +1,21 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © lucaOttvn
+
+//@version=6
+
+// @description TODO: add library description here
+library("fib_theme", overlay = true)
+
+export const color fibColor0 = color.white
+
+export const color fibColor0500 = color.red
+
+export const color fibColor0618 = color.orange
+
+export const color fibColor0786 = color.aqua
+
+export const color fibColor1000 = color.white
+
+export const color fibColor1272 = color.green
+
+export const color fibColor1618 = color.green
