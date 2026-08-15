@@ -1,0 +1,22 @@
+// @version=6
+library("day_levels_lib")
+
+export type DayLevels
+    float dayLow
+    float dayHigh
+
+export getDayLevels(bool isNewDay) =>
+    var float dayLow  = na
+    var float dayHigh = na
+
+    bodyLow  = math.min(open, close)
+    bodyHigh = math.max(open, close)
+
+    if isNewDay
+        dayLow  := bodyLow
+        dayHigh := bodyHigh
+    else
+        dayLow  := math.min(dayLow, bodyLow)
+        dayHigh := math.max(dayHigh, bodyHigh)
+
+    DayLevels.new(dayLow, dayHigh)

@@ -1,0 +1,37 @@
+//@version=6
+indicator("First 15 Minutes Range", overlay=true, max_boxes_count=500)
+
+openingMinutes = input.int(15, "Opening range duration", minval=1)
+borderColor    = input.color(color.purple, "Border color")
+fillColor      = input.color(color.new(color.purple, 65), "Fill color")
+
+dayStart = time("D")
+
+isNewDay = na(dayStart[1]) or dayStart != dayStart[1]
+inOpeningRange = time >= dayStart and time < dayStart + openingMinutes * 60 * 1000
+
+var float openingHigh = na
+var float openingLow  = na
+var box openingBox    = na
+
+if isNewDay
+    openingHigh := high
+    openingLow  := low
+
+    openingBox := box.new(
+         left         = dayStart,
+         top          = openingHigh,
+         right        = dayStart + openingMinutes * 60 * 1000,
+         bottom       = openingLow,
+         xloc         = xloc.bar_time,
+         border_color = borderColor,
+         border_width = 1,
+         bgcolor      = fillColor
+     )
+
+else if inOpeningRange
+    openingHigh := math.max(openingHigh, high)
+    openingLow  := math.min(openingLow, low)
+
+    box.set_top(openingBox, openingHigh)
+    box.set_bottom(openingBox, openingLow)
