@@ -1,7 +1,7 @@
 //@version=6
 
 import lucaOttvn/fib_theme/5 as fib_theme
-import lucaOttvn/day_levels_lib/3 as day_levels_lib
+import lucaOttvn/day_levels_lib/4 as day_levels_lib
 
 indicator(
      "3-Candle Gap Zones + Bullish Gap Fibonacci",
@@ -103,7 +103,6 @@ enoughBars = bar_index >= 2
 
 // high shadows
 c1High = high[2]
-c2High = high[1]
 c3High = high
 
 // low shadows
@@ -114,22 +113,27 @@ c3Low = low
 // - there are enough candles
 // - the first 15 minutes of the day have passed
 // - the gap exists
-// - close of the 3rd candle is bigger than the 2nd candle's high 
-//     this step actually checks if the 3rd candle broke the day max but in relation to the second candle instead of the dayMax
-// - the 3rd candle's high breaks the dayHigh (bullish gap)/dayLow (bearish gap)
+// - the 3rd candle's close breaks the dayHigh
+// - the 3rd candle is big enough to be considered
 bullishGapRaw =
      enoughBars and
      afterOpeningPeriod and
      c3Low > c1High and
-     close > c2High and 
-     c3High >= dayHigh
+     close >= dayHigh and
+     close - open > 0.5
 
-
+// check if: 
+// - there are enough candles
+// - the first 15 minutes of the day have passed
+// - the gap exists
+// - the 3rd candle's close breaks the dayLow
+// - the 3rd candle is big enough to be considered
 bearishGapRaw =
      enoughBars and
      afterOpeningPeriod and
      c3High < c1Low and
-     close <= dayLow
+     close <= dayLow and
+     open - close > 0.5
 
 bullishGap =
      inLookback and

@@ -1,16 +1,19 @@
-// @version=6
+//@version=6
 library("day_levels_lib")
+
 
 export type DayLevels
     float dayLow
     float dayHigh
 
+
 export getDayLevels(bool isNewDay) =>
     var float dayLow  = na
     var float dayHigh = na
 
-    bodyLow  = math.min(open, close)
+    // Current candle body boundaries.
     bodyHigh = math.max(open, close)
+    bodyLow  = math.min(open, close)
 
     if isNewDay
         dayLow  := bodyLow
