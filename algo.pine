@@ -12,7 +12,7 @@ indicator(
 
 // --- inputs ---
 lookbackBars = input.int(
-     1000,
+     999999,
      "Lookback bars",
      minval = 3
 )
@@ -30,7 +30,7 @@ bearColor = input.color(
 
 // --- fibonacci settings ---
 showBullFib = input.bool(
-     true,
+     false,
      "Show Fibonacci for bullish gaps"
 )
 
@@ -101,24 +101,28 @@ afterOpeningPeriod =
 inLookback = bar_index >= last_bar_index - lookbackBars + 1
 enoughBars = bar_index >= 2
 
-// candle 1 and candle 3
-// candle 2 is intentionally ignored
+// high shadows
 c1High = high[2]
-c1Low = low[2]
-
-c3Low = low
+c2High = high[1]
 c3High = high
+
+// low shadows
+c1Low = low[2]
+c3Low = low
 
 // check if: 
 // - there are enough candles
 // - the first 15 minutes of the day have passed
 // - the gap exists
-// - the gap breaks the dayHigh (bullish gap)/dayLow (bearish gap)
+// - close of the 3rd candle is bigger than the 2nd candle's high 
+//     this step actually checks if the 3rd candle broke the day max but in relation to the second candle instead of the dayMax
+// - the 3rd candle's high breaks the dayHigh (bullish gap)/dayLow (bearish gap)
 bullishGapRaw =
      enoughBars and
      afterOpeningPeriod and
      c3Low > c1High and
-     close >= dayHigh
+     close > c2High and 
+     c3High >= dayHigh
 
 
 bearishGapRaw =
