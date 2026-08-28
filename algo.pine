@@ -12,7 +12,7 @@ indicator(
 
 // set how many bars the indicator have to check back in time
 lookbackBars = input.int(
-     600,
+     1000,
      "Lookback bars",
      minval = 3
 )
@@ -142,16 +142,24 @@ var array<float> fibRatios = array.from(
 
 // corresponding line colors
 var array<color> fibLineColors = array.from(
-     fib_theme.fibColor0,
-     fib_theme.fibColor0500,
-     fib_theme.fibColor0618,
-     fib_theme.fibColor0786,
-     fib_theme.fibColor1000
+     color.white,
+     color.red,
+     color.orange,
+     color.aqua,
+     color.white
 )
+
+var array<color> fibZonesColor = array.from(
+     color.red,
+     color.orange,
+     color.aqua,
+     color.white
+)
+
 
 // TEMP
 // var array<float> startingPrices = array.new_float()
-var float level0618 = na
+var float openingLevel = na
 
 // draw Fibonacci for valid bullish gaps
 if showBullishFib and bullishGap and not na(dayLow) and not na(dayHigh)
@@ -163,67 +171,19 @@ if showBullishFib and bullishGap and not na(dayLow) and not na(dayHigh)
     // set the Fibonacci indicator's length starting from the current index
     fibEndBar = bar_index + 50
     
-    // calculate Fibonacci prices.
-    level0 = dayLow
-    level0500 = dayLow + dailyRange * 0.500
-    level0618 := dayLow + dailyRange * 0.618
-    level0786 = dayLow + dailyRange * 0.786
-    level1000 = dayHigh
+    openingLevel := dayLow + dailyRange * 0.618
 
-    if low < level0618
+    // detect the collision between the price and the open position level
+    if low < openingLevel
         // Create one label for this new price
         label.new(
             x = bar_index,
-            y = level0618,
+            y = openingLevel,
             text = "Saved price: " + str.tostring(close),
             style = label.style_label_down,
             color = color.new(#28602a, 0),
             textcolor = color.white
         )
-
-    // red section
-    array.push(fibBoxes, box.new(
-         left = fibStartBar,
-         right = fibEndBar,
-         top = level0500,
-         bottom = level0,
-         xloc = xloc.bar_index,
-         bgcolor = color.new(fib_theme.fibFill0To0500, 75),
-         border_color = na
-    ))
-    
-    // orange section
-    array.push(fibBoxes, box.new(
-         left = fibStartBar,
-         right = fibEndBar,
-         top = level0618,
-         bottom = level0500,
-         xloc = xloc.bar_index,
-         bgcolor = color.new(fib_theme.fibFill0500To0618, 75),
-         border_color = na
-    ))
-    
-    // blue section
-    array.push(fibBoxes, box.new(
-         left = fibStartBar,
-         right = fibEndBar,
-         top = level0786,
-         bottom = level0618,
-         xloc = xloc.bar_index,
-         bgcolor = color.new(fib_theme.fibFill0618To0786, 75),
-         border_color = na
-    ))
-    
-    // white section
-    array.push(fibBoxes, box.new(
-         left = fibStartBar,
-         right = fibEndBar,
-         top = level1000,
-         bottom = level0786,
-         xloc = xloc.bar_index,
-         bgcolor = color.new(fib_theme.fibFill0786To1000, 75),
-         border_color = na
-    ))
     
     // Fibonacci horizontal lines
     for i = 0 to array.size(fibRatios) - 1
@@ -244,7 +204,32 @@ if showBullishFib and bullishGap and not na(dayLow) and not na(dayHigh)
         
         array.push(fibLines, levelLine)
 
-if low < level0618
+    // Fibonacci boxes between levels
+    for i = 0 to array.size(fibRatios) -2
+        ratioTop = array.get(fibRatios, i)
+        ratioBottom = array.get(fibRatios, i + 1)
+
+        priceTop = dayLow + dailyRange * ratioTop
+        priceBottom = dayLow + dailyRange * ratioBottom
+
+        boxColor = color.new(array.get(fibZonesColor, i), 80)  
+
+        levelBox = box.new(
+            left = fibStartBar,
+            top = priceTop,
+            right = fibEndBar,
+            bottom = priceBottom,
+            xloc = xloc.bar_index,
+            bgcolor = boxColor,
+            border_width = 0
+        )
+
+        array.push(fibBoxes, levelBox)
+
+
+// ------------ POSITION OPENING SECTION ------------
+
+if low < openingLevel
     label.new(
         x = bar_index,
         y = low,
@@ -253,4 +238,13 @@ if low < level0618
         color = color.new(#28602a, 0),
         textcolor = color.white
     )
-    level0618 := na
+    // box.new(
+    //      left = bar_index,
+    //      right = bar_index + 40,
+    //      top = low + (low * 0.01),
+    //      bottom = low - (low * 0.01),
+    //      xloc = xloc.bar_index,
+    //      bgcolor = color.new(color.blue, 75),
+    //      border_color = na
+    // )
+    openingLevel := na
