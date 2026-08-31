@@ -1,7 +1,7 @@
 //@version=6
 
 import lucaOttvn/fib_theme/5 as fib_theme
-import lucaOttvn/day_levels_lib/4 as day_levels_lib
+import lucaOttvn/day_levels_lib/15 as day_levels_lib
 
 indicator(
      "3-Candle Gap Zones + Bullish Gap Fibonacci",
@@ -19,7 +19,7 @@ lookbackBars = input.int(
 
 // show/hide bullish Fibonacci
 showBullishFib = input.bool(
-     true,
+     false,
      "Show Fibonacci for bullish gaps"
 )
 
@@ -48,8 +48,11 @@ levels    = day_levels_lib.getDayLevels(isNewDay)
 float dayHigh = levels.dayHigh
 float dayLow  = levels.dayLow
 
-plot(dayHigh, "Day Body High", color = color.yellow, linewidth = 4)
-plot(dayLow,  "Day Body Low",  color = color.blue,   linewidth = 4)
+plot(dayHigh, "Day Body High", color = color.white, linewidth = 2)
+plot(dayLow,  "Day Body Low",  color = color.white,   linewidth = 2)
+plot(levels.redLine,  "Fibonacci red line",  color = color.red,   linewidth = 2)
+plot(levels.orangeLine,  "Fibonacci orange section",  color = color.orange,   linewidth = 2)
+plot(levels.aquaLine,  "Fibonacci aqua section",  color = color.aqua,   linewidth = 2)
 
 // ------------------------------------------------
 
@@ -155,7 +158,6 @@ var array<color> fibZonesColor = array.from(
      color.aqua,
      color.white
 )
-
 
 // TEMP
 // var array<float> startingPrices = array.new_float()

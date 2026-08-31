@@ -1,11 +1,12 @@
 //@version=6
 library("day_levels_lib")
 
-
 export type DayLevels
     float dayLow
     float dayHigh
-
+    float redLine
+    float orangeLine
+    float aquaLine
 
 export getDayLevels(bool isNewDay) =>
     var float dayLow  = na
@@ -22,4 +23,10 @@ export getDayLevels(bool isNewDay) =>
         dayLow  := math.min(dayLow, bodyLow)
         dayHigh := math.max(dayHigh, bodyHigh)
 
-    DayLevels.new(dayLow, dayHigh)
+    dayHeight = dayHigh - dayLow
+
+    float redLine = dayLow + dayHeight * 0.5
+    float orangeLine = dayLow + dayHeight * 0.618
+    float aquaLine = dayLow + dayHeight * 0.786
+
+    DayLevels.new(dayLow, dayHigh, redLine, orangeLine, aquaLine)
