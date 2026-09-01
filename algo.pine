@@ -1,6 +1,5 @@
 //@version=6
 
-import lucaOttvn/fib_theme/5 as fib_theme
 import lucaOttvn/day_levels_lib/16 as day_levels_lib
 
 indicator(
@@ -17,28 +16,12 @@ lookbackBars = input.int(
      minval = 3
 )
 
-// show/hide bullish Fibonacci
-showBullishFib = input.bool(
-     false,
-     "Show Fibonacci for bullish gaps"
-)
-
-// tradingView has object limits.
-// each Fibonacci structure uses 7 lines and 6 background boxes.
-maxFibSets = input.int(
-     40,
-     "Maximum amount of Fibonacci structures, the oldest one get garbage collected",
-     minval = 1,
-     maxval = 60
-)
-
 // opening window in minutes
 openingMinutes = input.int(
      15,
      "Ignore first minutes of day to avoid extreme volatility",
      minval = 0
 )
-
 
 // ------------ DAY MAX AND MIN SECTION ------------
 
@@ -66,9 +49,6 @@ afterOpeningPeriod =
      time[2] >= openingEnd
 
 // --- lookback and candle availability ---
-inLookback = bar_index >= last_bar_index - lookbackBars + 1
-enoughBars = bar_index >= 2
-
 // high shadows
 c1High = high[2]
 c3High = high
@@ -77,31 +57,24 @@ c3High = high
 c1Low = low[2]
 c3Low = low
 
-// check if: 
-// - there are enough candles
-// - the current candle is included in the lookback amount of candles to check
-// - the first 15 minutes of the day have passed
-// these conditions are needed for both the bullish and bearish gaps
-generalConditions = enoughBars and inLookback and afterOpeningPeriod 
-
 // - the gap exists
 // - the 3rd candle's close breaks the dayHigh
 // - the 3rd candle is big enough to be considered
 bullishGap =
-     generalConditions and
+     afterOpeningPeriod and
      c3Low > c1High and
-     close >= dayHigh and
-     close - open > 0.5
+     high >= dayHigh and
+     close - open > 0.1
 
 // check if: 
 // - the gap exists
 // - the 3rd candle's close breaks the dayLow
 // - the 3rd candle is big enough to be considered
 bearishGap =
-     generalConditions and
+     afterOpeningPeriod and
      c3High < c1Low and
-     close <= dayLow and
-     open - close > 0.5
+     high <= dayLow and
+     open - close > 0.1
 
 // draw bullish gap zone
 if bullishGap
@@ -133,14 +106,6 @@ var bool insideValidGapZone = false
 // when as valid gap is encountered and we aren't in a valid gap zone already
 if (bullishGap and insideValidGapZone == false)
     insideValidGapZone := true
-
-// when the current candle's low touches the red line, stop drawing Fibonacci (operation exit)
-if (low < levels.redLine and insideValidGapZone)
-    insideValidGapZone := false
-
-// if Fibonacci continues until the end of the day, stop it
-if isNewDay
-    insideValidGapZone := false
     
 plot(
     insideValidGapZone ? levels.redLine : na,
@@ -165,3 +130,37 @@ plot(
     linewidth = 2,
     style = plot.style_linebr
 )
+
+
+// ------------ OPERATION SECTION ------------
+
+var float openedPosition = na
+
+if insideValidGapZone and low < levels.orangeLine and na(openedPosition)
+    openedPosition := close
+
+    box.new(
+        left = bar_index,
+        right = bar_index + 100,
+        top = levels.orangeLine,
+        bottom = levels.orangeLine - (levels.orangeLine * 0.01),
+        bgcolor = color.new(color.red, 80),
+        border_color = color.red,
+        border_width = 1
+    )
+
+    box.new(
+        left = bar_index,
+        right = bar_index + 100,
+        top = levels.orangeLine,
+        bottom = levels.orangeLine + (levels.orangeLine * 0.01),
+        bgcolor = color.new(color.green, 80),
+        border_color = color.green,
+        border_width = 1
+    )
+
+
+// end of the day resets
+if isNewDay
+    insideValidGapZone := false
+    openedPosition := na
