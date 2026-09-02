@@ -23,6 +23,25 @@ openingMinutes = input.int(
      minval = 0
 )
 
+timezone = input.string(
+     "Europe/Rome",
+     "Timezone",
+     options = [
+         "Europe/Rome",
+         "Etc/UTC",
+         "America/New_York",
+         "America/Chicago",
+         "America/Los_Angeles",
+         "Asia/Tokyo",
+         "Europe/London"
+     ]
+)
+
+
+bullishGapColor = input.color(color.blue)
+
+thresholdHour = input.int(18, "Hour threshold (0-23)", minval = 0, maxval = 23)
+
 // ------------ DAY MAX AND MIN SECTION ------------
 
 isNewDay = ta.change(time("D")) != 0
@@ -63,6 +82,7 @@ c3Low = low
 bullishGap =
      afterOpeningPeriod and
      c3Low > c1High and
+     c3Low - c1High > 0.1 and
      high >= dayHigh and
      close - open > 0.1
 
@@ -73,6 +93,7 @@ bullishGap =
 bearishGap =
      afterOpeningPeriod and
      c3High < c1Low and
+     c1Low - c3High > 0.1 and
      high <= dayLow and
      open - close > 0.1
 
@@ -83,7 +104,7 @@ if bullishGap
          right = bar_index,
          top = c3Low,
          bottom = c1High,
-         bgcolor = color.new(color.green, 65),
+         bgcolor = bullishGapColor,
          border_color = na
     )
 
@@ -101,14 +122,17 @@ if bearishGap
 
 // ------------ FIBONACCI SECTION ------------
 
-var bool insideValidGapZone = false
+currentHour = hour(time, timezone)
 
-// when as valid gap is encountered and we aren't in a valid gap zone already
-if (bullishGap and insideValidGapZone == false)
-    insideValidGapZone := true
+// this bool tells if we currently are in a Fibonacci area or not
+var bool insideFibArea = false
+
+// when a valid gap is found and we are not in a Fibonacci area already, mark the beginning of a new Fibonacci area
+if bullishGap and not insideFibArea
+    insideFibArea := true
     
 plot(
-    insideValidGapZone ? levels.redLine : na,
+    insideFibArea ? levels.redLine : na,
     "Fibonacci red line",
     color = color.red,
     linewidth = 2,
@@ -116,7 +140,7 @@ plot(
 )
 
 plot(
-    insideValidGapZone ? levels.orangeLine : na,
+    insideFibArea ? levels.orangeLine : na,
     "Fibonacci orange line",
     color = color.orange,
     linewidth = 2,
@@ -124,7 +148,7 @@ plot(
 )
 
 plot(
-    insideValidGapZone ? levels.aquaLine : na,
+    insideFibArea ? levels.aquaLine : na,
     "Fibonacci aqua line",
     color = color.aqua,
     linewidth = 2,
@@ -134,9 +158,12 @@ plot(
 
 // ------------ OPERATION SECTION ------------
 
+// bool to check if there currently is an opened position
 var float openedPosition = na
 
-if insideValidGapZone and low < levels.orangeLine and na(openedPosition)
+if insideFibArea and low < levels.orangeLine and na(openedPosition) and afterOpeningPeriod
+
+    // reset the opened position check
     openedPosition := close
 
     box.new(
@@ -159,8 +186,11 @@ if insideValidGapZone and low < levels.orangeLine and na(openedPosition)
         border_width = 1
     )
 
+// stop drawing Fibonacci if the treshold hour has passed or the day ended
+if currentHour >= thresholdHour or isNewDay
+    insideFibArea := false
 
-// end of the day resets
+// at the end of the day close the open position (if there's one)
 if isNewDay
-    insideValidGapZone := false
     openedPosition := na
+
