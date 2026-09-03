@@ -76,15 +76,20 @@ c3High = high
 c1Low = low[2]
 c3Low = low
 
+// min size for bullish gaps and third candle
+// get the middle point of the gap and calculate the 1% of that price
+bullishMinSize = (open - close[2]) / 2  * 0.01
+bearishMinSize = (close[2] - open) / 2  * 0.01
+
 // - the gap exists
 // - the 3rd candle's close breaks the dayHigh
 // - the 3rd candle is big enough to be considered
 bullishGap =
      afterOpeningPeriod and
      c3Low > c1High and
-     c3Low - c1High > 0.1 and
+     c3Low - c1High > bullishMinSize and
      high >= dayHigh and
-     close - open > 0.1
+     close - open > bullishMinSize
 
 // check if: 
 // - the gap exists
@@ -93,9 +98,9 @@ bullishGap =
 bearishGap =
      afterOpeningPeriod and
      c3High < c1Low and
-     c1Low - c3High > 0.1 and
+     c1Low - c3High > bearishMinSize and
      high <= dayLow and
-     open - close > 0.1
+     open - close > bearishMinSize
 
 // draw bullish gap zone
 if bullishGap
